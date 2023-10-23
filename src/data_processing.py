@@ -1,4 +1,7 @@
+import os
+import shutil
 import pandas as pd
+from datetime import datetime
 
 from constants import DATA_PATH
 
@@ -19,6 +22,38 @@ def extract(data_path=DATA_PATH):
         data = pd.read_json(data_path, lines=True)
     except Exception as e:
         raise ValueError(f"Failed to load data from {data_path}: {e}")
+    return data
+
+def export_snapshot(data, snapshot_folder, snapshot_name):
+    """
+    Export snapshot of data to the required destination.
+
+    Parameters:
+    data (pd.DataFrame): The input data.
+    snapshot_folder (str): The path of the folder to save to
+    snapshot_name (str): The name to be assigned to the file with a timestamp
+
+    Returns
+    """
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    snapshot_path = os.path.join(snapshot_folder, f'{snapshot_name}_{timestamp}.csv')
+    data.to_csv(snapshot_path, index=False)
+    return snapshot_path  # Returning the path can be useful for logging or further processing
+
+def load_from_staging(staging_folder, file_name):
+    """
+    Load snapshot of data from the required destination.
+
+    Parameters:
+    data (pd.DataFrame): The input data.
+    snapshot_folder (str): The path of the folder to load from
+    snapshot_name (str): The name of the file to load
+
+    Returns
+    data (pd.DataFrame): The data being 
+    """
+    file_path = os.path.join(staging_folder, file_name)
+    data = pd.read_csv(file_path)
     return data
 
 def deduplicate(data):
@@ -50,10 +85,16 @@ def rank_users(data):
     if data.empty:
         raise ValueError("Input data is empty")
 
-    data['age_group_rank'] = data.sort_values('user_score', ascending=False)\
-                                  .groupby('age_group')\
-                                  .cumcount() + 1
-    return data
+    # Make a copy of the data to avoid modifying the original DataFrame
+    data_copy = data.copy()
+
+    # Sort the data by age_group and user_score, in descending order for user_score
+    data_copy.sort_values(by=['age_group', 'user_score'], ascending=[True, False], inplace=True)
+
+    # Compute the rank within each age group based on user_score
+    data_copy['age_group_rank'] = data_copy.groupby('age_group').cumcount() + 1
+
+    return data_copy
 
 def get_top_user_per_age_group(data):
     """

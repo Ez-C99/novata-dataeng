@@ -1,9 +1,10 @@
+import os
 import logging
-
+import pandas as pd
 import data_processing as dp 
 import db_operations as db_ops
 
-from constants import DATA_PATH, STAGING_FOLDER, EXPORT_FOLDER, DB_PATH
+from constants import DATA_PATH, STAGING_FOLDER, DB_PATH
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -11,15 +12,19 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Main execution start
 def main():
+
     # Data extraction
     logging.info("Extracting data...")
     try:
         data = dp.extract(DATA_PATH)
-    except Exception as e:
-        logging.error(f"ERROR! Unable to extract data: {e}")
+    except ValueError as e:
+        logging.error(f"Value Error during data extraction: {e}")
         raise
-
     logging.info("Successfully extracted data")
+
+    # Create snapshot of extracted data
+    extracted_snapshot_path = dp.export_snapshot(data, STAGING_FOLDER, 'extracted_data')
+    logging.info(f"Snapshot of extracted data snapshot created in staging at {extracted_snapshot_path}")
 
 
     # Task 1: Output number of rows
@@ -31,6 +36,11 @@ def main():
     logging.info("Deduplicating data...")
     deduplicated_data = dp.deduplicate(data)
     logging.info("Data deduplication complete")
+
+
+    # Create snapshot of deduplicated data
+    dedupe_snapshot_path = dp.export_snapshot(deduplicated_data, STAGING_FOLDER, 'deduplicated_data')
+    logging.info(f"Snapshot of deduplicated data created in staging at {dedupe_snapshot_path}")
 
 
     # Task 3: Output number of rows removed
@@ -65,9 +75,23 @@ def main():
     logging.info("Extracting widget info...")
     transformed_data = dp.extract_widget_info(flattened_data)
     logging.info("Widget info extraction complete")
+    
+    # Create snapshot of transformed data
+    transformed_snapshot_path = dp.export_snapshot(transformed_data, STAGING_FOLDER, 'transformed_data')
+    logging.info(f"Snapshot of transformed data created in staging at {transformed_snapshot_path}")
 
-
-    # Task 9: Store table in SQLite database
+    
+    # Task 9: Store table in SQLite database (loading from snapshot first)
+    logging.info("Loading transformed data from staging...")
+    try:
+        # Extract the file name from the full path
+        file_name = os.path.basename(transformed_snapshot_path)
+        transformed_data = dp.load_from_staging(STAGING_FOLDER, file_name)
+    except Exception as e:
+        logging.error(f"ERROR! Unable to load transformed data from staging: {e}")
+        raise
+    logging.info("Successfully loaded transformed data from staging")
+    
     logging.info("Loading data into SQLite database...")
     try:
         transformed_data = dp.convert_unsupported_data_types(transformed_data)
@@ -75,7 +99,6 @@ def main():
     except Exception as e:
         logging.error(f"ERROR! Unable to load data into database: {e}")
         raise
-
     logging.info("Successfully loaded data into database")
 
 
@@ -83,21 +106,23 @@ def main():
     logging.info("Creating inverted index dataset...")
     try:
         inverted_index = db_ops.create_inverted_index(transformed_data)
-    except Exception as e:
-        logging.error(f"ERROR! Unable to create inverted index: {e}")
+    except db_ops.IndexCreationError as e:  # Assuming you have a custom exception for index creation
+        logging.error(f"Index Creation Error: {e}")
         raise
-
     logging.info("Successfully created inverted index")
+
+    # Create snapshot of inverted index table
+    inverted_snapshot_path = dp.export_snapshot(inverted_index, STAGING_FOLDER, 'inverted_index')
+    logging.info(f"Snapshot of inverted index data created in staging at {inverted_snapshot_path}")
 
 
     # Task 11: Store inverted index table
     logging.info("Storing inverted index table...")
     try:
         db_ops.store_inverted_index(inverted_index, DB_PATH, table_name='inverted_index')
-    except Exception as e:
-        logging.error(f"ERROR! Unable to store inverted index table: {e}")
+    except db_ops.IndexStorageError as e:  # Assuming you have a custom exception for index storage
+        logging.error(f"Index Storage Error: {e}")
         raise
-
     logging.info("Successfully stored inverted index table")
 
 

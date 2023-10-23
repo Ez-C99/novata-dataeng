@@ -5,6 +5,12 @@ from constants import DB_PATH
 class DatabaseError(Exception):
     """An exception class for database-related errors."""
 
+class IndexCreationError(DatabaseError):
+    """An exception class for errors during inverted index creation."""
+
+class IndexStorageError(DatabaseError):
+    """An exception class for errors during inverted index storage."""
+
 def connect(db_path=DB_PATH):
     """
     Create a database connection and return the connection object.
@@ -60,6 +66,7 @@ def create_inverted_index(data):
 
     Raises:
     ValueError: If the data is empty or required columns are missing.
+    IndexCreationError: If an error occurs during index creation.
     """
     required_columns = ['location', 'id']
     if not all(col in data.columns for col in required_columns):
@@ -67,8 +74,11 @@ def create_inverted_index(data):
     if data.empty:
         raise ValueError("Input data is empty")
 
-    inverted_index = data.groupby('location')['id'].apply(lambda x: ','.join(map(str, x))).reset_index()
-    return inverted_index
+    try:
+        inverted_index = data.groupby('location')['id'].apply(lambda x: ','.join(map(str, x))).reset_index()
+        return inverted_index
+    except Exception as e:
+        raise IndexCreationError(f"Error during index creation: {e}")
 
 def store_inverted_index(inverted_index, db_path=DB_PATH, table_name='inverted_index'):
     """
@@ -80,12 +90,12 @@ def store_inverted_index(inverted_index, db_path=DB_PATH, table_name='inverted_i
     table_name (str): The name of the table to store the inverted index. Defaults to 'inverted_index'.
 
     Raises:
-    DatabaseError: If a database error occurs.
+    IndexStorageError: If a database error occurs during index storage.
     """
     conn = connect(db_path)  # Create a database connection
     try:
         inverted_index.to_sql(table_name, conn, if_exists='replace', index=False)
     except sqlite3.Error as e:
-        raise DatabaseError(f"Database error: {e}")
+        raise IndexStorageError(f"Error during index storage: {e}")
     finally:
         conn.close()  # Close the database connection
