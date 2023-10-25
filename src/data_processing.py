@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from io import StringIO
 from datetime import datetime
 
 from constants import DATA_PATH
@@ -19,7 +20,9 @@ def extract(data_path=DATA_PATH):
     ValueError: If the file could not be loaded.
     """
     try:
-        data = pd.read_json(data_path, lines=True)
+        with open(data_path, 'r') as file:
+            data_str = file.read()
+        data = pd.read_json(StringIO(data_str), lines=True)
     except Exception as e:
         raise ValueError(f"Failed to load data from {data_path}: {e}")
     return data
@@ -171,7 +174,7 @@ def convert_unsupported_data_types(data):
     if data.empty:
         raise ValueError("Input DataFrame is empty")
 
-    converted_data = data.applymap(lambda x: str(x) if isinstance(x, (list, dict)) else x)
+    converted_data = data.apply(lambda series: series.map(lambda x: str(x) if isinstance(x, (list, dict)) else x))
     return converted_data
 
 
