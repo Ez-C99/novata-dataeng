@@ -1,4 +1,4 @@
-import os
+import os, sys
 import logging
 import pandas as pd
 import data_processing as dp 
@@ -6,12 +6,25 @@ import db_operations as db_ops
 
 from constants import DATA_PATH, STAGING_FOLDER, DB_PATH
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../test/data_quality')))
+
+from test_data_quality import test_data_quality
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 # Main execution start
 def main():
+
+    # Run data quality tests first
+    logging.info("Running data quality tests...")
+    try:
+        test_data_quality() 
+    except AssertionError as e: 
+        logging.error(f"Data quality tests failed: {e}")
+        raise
+    logging.info("Data quality tests passed.")
 
     # Data extraction
     logging.info("Extracting data...")
