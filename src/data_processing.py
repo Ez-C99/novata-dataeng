@@ -4,6 +4,7 @@ from datetime import datetime
 
 from constants import DATA_PATH
 
+
 def extract(data_path=DATA_PATH):
     """
     Load the JSON data into a DataFrame.
@@ -75,7 +76,7 @@ def deduplicate(data):
     ValueError: If the input data is empty.
     """
     if data.empty:
-        raise ValueError("Input data is empty")
+        raise ValueError("Input DataFrame is empty")
     
     deduplicated_data = data.drop_duplicates(subset=['id', 'created_at'])
     return deduplicated_data
@@ -95,7 +96,7 @@ def rank_users(data):
     ValueError: If the input data is empty.
     """
     if data.empty:
-        raise ValueError("Input data is empty")
+        raise ValueError("Input DataFrame is empty")
 
     # Make a copy of the data to avoid modifying the original DataFrame
     data_copy = data.copy()
@@ -104,7 +105,7 @@ def rank_users(data):
     data_copy.sort_values(by=['age_group', 'user_score'], ascending=[True, False], inplace=True)
 
     # Compute the rank within each age group based on user_score
-    data_copy['age_group_rank'] = data_copy.groupby('age_group').cumcount() + 1
+    data_copy['age_group_rank'] = data_copy.groupby('age_group')['user_score'].rank(method='min', ascending=False).astype(int)
 
     return data_copy
 
@@ -122,11 +123,12 @@ def get_top_user_per_age_group(data):
     Raises:
     ValueError: If required columns are missing or the input data is empty.
     """
+    if data.empty:
+        raise ValueError("Input DataFrame is empty")
+
     required_columns = ['age_group', 'user_score', 'id', 'email']
     if not all(col in data.columns for col in required_columns):
         raise ValueError(f"Missing required columns: {', '.join(required_columns)}")
-    if data.empty:
-        raise ValueError("Input data is empty")
 
     return data.sort_values(by=['age_group', 'user_score'], ascending=[True, False])\
                 .groupby('age_group')\
@@ -147,7 +149,7 @@ def flatten_widget_list(data):
     ValueError: If the input data is empty.
     """
     if data.empty:
-        raise ValueError("Input data is empty")
+        raise ValueError("Input DataFrame is empty")
 
     data_exploded = data.explode('widget_list')
     return data_exploded
@@ -167,7 +169,7 @@ def convert_unsupported_data_types(data):
     ValueError: If the input data is empty.
     """
     if data.empty:
-        raise ValueError("Input data is empty")
+        raise ValueError("Input DataFrame is empty")
 
     converted_data = data.applymap(lambda x: str(x) if isinstance(x, (list, dict)) else x)
     return converted_data
@@ -187,7 +189,7 @@ def extract_widget_info(data):
     ValueError: If the input data is empty.
     """
     if data.empty:
-        raise ValueError("Input data is empty")
+        raise ValueError("Input DataFrame is empty")
 
     data['widget_name'] = data['widget_list'].apply(lambda x: x['name'] if isinstance(x, dict) else None)
     data['widget_amount'] = data['widget_list'].apply(lambda x: x['amount'] if isinstance(x, dict) else None)
