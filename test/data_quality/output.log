@@ -1,0 +1,87 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.0, pytest-7.4.2, pluggy-1.3.0
+rootdir: /Users/ez/Library/CloudStorage/GoogleDrive-ezchamba@gmail.com/My Drive/Career Docs/2023 Applications/Novata/Interviewing/Tech Task/novata-dataeng/test/data_quality
+plugins: anyio-4.0.0
+collected 1 item
+
+test_data_quality.py F                                                   [100%]
+
+=================================== FAILURES ===================================
+______________________________ test_data_quality _______________________________
+
+data_path = '/Users/ez/Library/CloudStorage/GoogleDrive-ezchamba@gmail.com/My Drive/Career Docs/2023 Applications/Novata/Interviewing/Tech Task/novata-dataeng/data/raw/data.json'
+
+    def test_data_quality(data_path=DATA_PATH):
+        """
+        Validate the quality of data processed by the data_processing module
+        using the Great Expectations library.
+        """
+        logging.info("Starting data quality test...")
+    
+        try:
+            data = dp.extract(data_path=data_path)
+            ge_data = ge.from_pandas(data)
+        except Exception as e:
+            pytest.fail(f"Data extraction or conversion failed: {e}")
+    
+        # Get the auto-generated expectation suite
+>       expectation_suite = profile_data(data_path)
+
+test_data_quality.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+profiler.py:23: in profile_data
+    profiler = UserConfigurableProfiler(
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/great_expectations/profile/user_configurable_profiler.py:212: in __init__
+    self._validate_semantic_types_dict()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <great_expectations.profile.user_configurable_profiler.UserConfigurableProfiler object at 0x126fadfd0>
+
+    def _validate_semantic_types_dict(self):
+        """
+        Validates a semantic_types dict to ensure correct formatting, that all semantic_types are recognized, and that
+        the semantic_types align with the column data types
+        Args:
+    
+        Returns:
+            The validated semantic_types dictionary
+    
+        """
+        if not isinstance(self.semantic_types_dict, dict):
+            raise ValueError(
+                f"The semantic_types dict in the config must be a dictionary, but is currently a "
+                f"{type(self.semantic_types_dict)}. Please reformat."
+            )
+        for k, v in self.semantic_types_dict.items():
+            assert isinstance(v, list), (
+                "Entries in semantic type dict must be lists of column names e.g. "
+                "{'semantic_types': {'numeric': ['number_of_transactions']}}"
+            )
+            if not any(
+                k.upper() == semantic_type.value
+                for semantic_type in ProfilerSemanticTypes
+            ):
+                raise ValueError(
+                    f"{k} is not a recognized semantic_type. Please only include one of "
+                    f"{[semantic_type.value for semantic_type in ProfilerSemanticTypes]}"
+                )
+    
+        selected_columns = [
+            column
+            for column_list in self.semantic_types_dict.values()
+            for column in column_list
+        ]
+        if selected_columns:
+            for column in selected_columns:
+                if column not in self.all_table_columns:
+>                   raise ProfilerError(f"Column {column} does not exist.")
+E                   great_expectations.exceptions.exceptions.ProfilerError: Column id does not exist.
+
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/great_expectations/profile/user_configurable_profiler.py:458: ProfilerError
+----------------------------- Captured stderr call -----------------------------
+INFO:root:Starting data quality test...
+------------------------------ Captured log call -------------------------------
+INFO     root:test_data_quality.py:19 Starting data quality test...
+=========================== short test summary info ============================
+FAILED test_data_quality.py::test_data_quality - great_expectations.exception...
+============================== 1 failed in 0.37s ===============================

@@ -1,5 +1,4 @@
-import os
-import sys
+import os, sys
 import pytest
 import pandas as pd
 import logging
