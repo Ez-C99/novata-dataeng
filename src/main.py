@@ -119,7 +119,7 @@ def main():
     logging.info("Creating inverted index dataset...")
     try:
         inverted_index = db_ops.create_inverted_index(transformed_data)
-    except db_ops.IndexCreationError as e:  # Assuming you have a custom exception for index creation
+    except db_ops.IndexCreationError as e: 
         logging.error(f"Index Creation Error: {e}")
         raise
     logging.info("Successfully created inverted index")
@@ -133,7 +133,7 @@ def main():
     logging.info("Storing inverted index table...")
     try:
         db_ops.store_inverted_index(inverted_index, DB_PATH, table_name='inverted_index')
-    except db_ops.IndexStorageError as e:  # Assuming you have a custom exception for index storage
+    except db_ops.IndexStorageError as e:
         logging.error(f"Index Storage Error: {e}")
         raise
     logging.info("Successfully stored inverted index table")
