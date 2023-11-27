@@ -50,6 +50,13 @@ def main():
     deduplicated_data = dp.deduplicate(data)
     logging.info("Data deduplication complete")
 
+    # Deduplication comparison
+    # dupe_data = pd.merge(data, deduplicated_data, how='left', indicator=True)
+    # dupe_data = dupe_data.loc[dupe_data['_merge'] == 'left_only']
+    # logging.info(dupe_data)
+    logging.info(data[~data.index.isin(deduplicated_data.index)])
+    logging.info(data[data['id'] == 'fef784c0-dde6-4e48-b2bb-8f0d4dd62770'])
+
 
     # Create snapshot of deduplicated data
     dedupe_snapshot_path = dp.export_snapshot(deduplicated_data, STAGING_FOLDER, 'deduplicated_data')

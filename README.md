@@ -116,7 +116,7 @@ Unit tests are created to ensure that the functions within the data_processing m
 To run unit tests, use the following command from the main directory:
 
 ```bash
-python3 -m pytest test/test_data_processing.py
+python3 -m pytest test/unit/test_data_processing.py
 ```
 
 ### End-to-End System Testing
@@ -126,7 +126,7 @@ End-to-end testing is performed to validate the entire ETL process from start to
 To run end-to-end tests, use the following command from the main directory:
 
 ```bash
-python3 -m pytest test/test_etl.py
+python3 -m pytest test/e2e/test_etl.py
 ```
 
 ## Additional Notes
